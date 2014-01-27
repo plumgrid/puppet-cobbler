@@ -10,6 +10,7 @@ define cobbler::ubuntu::preseed(
   $diskpart = [],
   $boot_disk = undef,
   $autostart_puppet = true,
+  $offline_mode = undef,
 ) {
     if ( ! defined(File['/etc/cobbler/preseeds'])) {
         file { "/etc/cobbler/preseeds":

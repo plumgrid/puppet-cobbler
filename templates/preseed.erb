@@ -1,8 +1,9 @@
 d-i mirror/country string manual
-d-i mirror/http/hostname string us.archive.ubuntu.com
+<% if  offline_mode == "enable" %>d-i mirror/http/hostname string <%= cobbler_node_ip %>
+<% else %>d-i mirror/http/hostname string us.archive.ubuntu.com<% end %>
 d-i mirror/http/directory string /ubuntu
 d-i mirror/suite string precise
-d-i partman-auto/disk string /dev/sda
+d-i partman-auto/disk string <%= boot_disk %>
 d-i partman-auto/method string regular
 d-i partman-lvm/device_remove_lvm boolean true
 d-i partman-md/device_remove_md boolean true
@@ -18,6 +19,7 @@ d-i partman/confirm_nooverwrite boolean true
 d-i base-installer/install-recommends   boolean false
 d-i base-installer/kernel/image select  linux-image-3.2.0-41-generic
 ##
+d-i debian-installer/allow_unauthenticated boolean true
 d-i clock-setup/utc boolean true
 <% if  ntp_server -%>d-i clock-setup/ntp boolean true
 d-i clock-setup/ntp-server string <%= ntp_server %><% end %>
@@ -26,6 +28,13 @@ d-i passwd/user-fullname string Admin Adminson
 d-i passwd/username string <%= admin_user %>
 d-i passwd/user-password-crypted password <%= password_crypted %>
 d-i user-setup/encrypt-home boolean false
+### Apt setup
+<% if  offline_mode == "enable" %>d-i apt-setup/restricted boolean false
+d-i apt-setup/universe boolean false
+d-i apt-setup/multiverse boolean false
+d-i apt-setup/backports boolean false
+d-i apt-setup/security_host string <%= cobbler_node_ip %>
+d-i apt-setup/security_path string /ubuntu <% end %>
 d-i grub-installer/only_debian boolean true
 d-i finish-install/reboot_in_progress note
 d-i pkgsel/update-policy select none
@@ -33,7 +42,7 @@ d-i pkgsel/include string <%= packages %>
 d-i preseed/early_command string wget -O /dev/null http://$http_server:$http_port/cblr/svc/op/trig/mode/pre/system/$system_name <% if early_command -%> ;\
 <%= early_command %>
 <% end %>
-d-i preseed/late_command string in-target puppet agent --test --waitforcert 0 || true; wget -O /dev/null http://$http_server:$http_port/cblr/svc/op/trig/mode/post/system/$system_name ;\
+d-i preseed/late_command string in-target <% if offline_mode == "enable" %>sed -i 's/deb-src/#deb-src/g;s/deb http:\/\/<%= cobbler_node_ip %>\/ubuntu precise-security main/#deb http:\/\/<%= cobbler_node_ip %>\/ubuntu precise-security main/g' /etc/apt/sources.list;\<% end %> puppet agent --test --waitforcert 0 || true; wget -O /dev/null http://$http_server:$http_port/cblr/svc/op/trig/mode/post/system/$system_name ;\
 if [ "`debconf-get netcfg/no_default_route`" = "true" ] ; then in-target sed -i.bak -e '/^\tgateway /d' /etc/network/interfaces; fi ;\
 wget -O /dev/null http://$http_server:$http_port/cblr/svc/op/nopxe/system/$system_name ;\
 <% if expert_disk -%>/sbin/lvremove -f nova-volumes/hack;\<% end -%>
