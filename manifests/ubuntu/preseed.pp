@@ -11,6 +11,8 @@ define cobbler::ubuntu::preseed(
   $boot_disk = undef,
   $autostart_puppet = true,
   $offline_mode = undef,
+  $installer_mirror = 'us.archive.ubuntu.com',
+  $time_zone = 'America/Los_Angeles',
 ) {
     if ( ! defined(File['/etc/cobbler/preseeds'])) {
         file { "/etc/cobbler/preseeds":
